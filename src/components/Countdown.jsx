@@ -1,6 +1,28 @@
 import React, { Component } from "react";
 import "./../styles/index.css";
+import Button from '@material-ui/core/Button';
+import { withStyles } from '@material-ui/core/styles';
+import Paper from '@material-ui/core/Paper';
+import Grid from '@material-ui/core/Grid'; 
+import firebase from "../config/constants.js"
+import moment from "moment"
 
+
+var database = firebase.database();
+
+
+
+
+const styles = theme => ({
+  root: {
+    flexGrow: 1,
+  },
+  paper: {
+    padding: theme.spacing.unit * 2,
+    textAlign: 'center',
+    color: theme.palette.text.secondary,
+  },
+});
 
 class Countdown extends Component{
   constructor(props){
@@ -62,8 +84,14 @@ class Countdown extends Component{
   }
 
   startStop() {
-    
+    const db = firebase.firestore();
     const status = this.state.running;
+    const user = firebase.auth().currentUser
+    const ev = new Date();
+    const sessionRef = db.collection("sessions").add({
+      start_time: ev.toJSON(),
+      user: user.uid,
+    })
     // const chime1 = new Audio("https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3") // changed to use <audio> to pass FCC tests
     switch (status) {
       case false:
@@ -134,16 +162,19 @@ class Countdown extends Component{
 
   render() {
     return (
-      <div id="clock">
+      <div id="clock" >
+      <Grid container spacing = {24}>
+      <Grid item xs={12}>
         <h1>Pomodoro Clock</h1>
+        </Grid>
       
 
         <div id="mainTimer">
           <h1>{(this.state.timerLabel==="Break") ?  this.formatMinutes(this.state.breakRemainingSeconds) : this.formatMinutes(this.state.sessionRemainingSeconds)}</h1>
           <h2>{this.state.timerLabel}</h2>
           <div id="timerControls" className="flexContainer">
-              <button onClick={this.startStop} id="start-stop">Start/Stop</button>
-              <button onClick={this.resetTimer} id="reset">Reset</button>
+              <Button variant ="contained" color = "primary" onClick={this.startStop} id="start-stop">Start/Stop</Button>
+              <Button variant = "contained" color = "secondary" onClick={this.resetTimer} id="reset">Reset</Button>
           </div>
         </div>
         <div className="flexContainer">
@@ -161,6 +192,7 @@ class Countdown extends Component{
             <audio id="notification" src="https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3" preload="auto"></audio> 
           </div>
         </div>
+        </Grid>
       </div>
     )
   }
