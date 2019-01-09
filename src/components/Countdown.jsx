@@ -1,11 +1,16 @@
+//todo
+//there is a problem with the handlechange fuction. Should change this to update the state when the enter key is pressed
+
+
 import React, { Component } from "react";
 import "./../styles/index.css";
 import Button from '@material-ui/core/Button';
 import { withStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid'; 
-import firebase from "../config/constants.js"
-import moment from "moment"
+import firebase from "../config/constants.js";
+import moment from "moment";
+import Modal from "./Modal";
 
 
 var database = firebase.database();
@@ -33,7 +38,9 @@ class Countdown extends Component{
       sessionRemainingSeconds: 1500, //in seconds
       breakRemainingSeconds: 300, //in seconds
       running: false,
-      timerLabel: "Session"
+      timerLabel: "Session",
+      goal: "",
+      show: true
     }
   
   this.addSession = this.addSession.bind(this);
@@ -43,6 +50,8 @@ class Countdown extends Component{
   this.startStop = this.startStop.bind(this);
   this.resetTimer = this.resetTimer.bind(this);
   this.formatMinutes = this.formatMinutes.bind(this);
+  this.onKeyPress = this.onKeyPress.bind(this);
+  this.handleChange = this.handleChange.bind(this);
   }
 
   addSession() { //adding and subtracting methods need to also chage the session remaining in seconds to mirrow the entry time if ever changed
@@ -91,6 +100,7 @@ class Countdown extends Component{
     const sessionRef = db.collection("sessions").add({
       start_time: ev.toJSON(),
       user: user.uid,
+      
     })
     // const chime1 = new Audio("https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3") // changed to use <audio> to pass FCC tests
     switch (status) {
@@ -160,26 +170,41 @@ class Countdown extends Component{
     return minutes + ":" + seconds;
   }
 
+  onKeyPress(event){
+    if(event.key == "Enter"){
+    event.preventDefault();
+    this.setState({goal: event.target.goal})
+    console.log("Goal changed!")
+    }
+  }
+
+  handleChange(event){
+    this.setState({goal: event.target.goal})
+    }
+
+  goSession = () => {
+     this.setState({ show: false });
+     //start timer
+     this.startStop();
+     //insert text in html for goal
+     //save data to firebase
+  };
+  
+
   render() {
     return (
       <div id="clock" >
       <Grid container spacing = {24}>
       <Grid item xs={12}>
         <h1>Pomodoro Clock</h1>
-        </Grid>
-      
-
-        <div id="mainTimer">
-          <h1>{(this.state.timerLabel==="Break") ?  this.formatMinutes(this.state.breakRemainingSeconds) : this.formatMinutes(this.state.sessionRemainingSeconds)}</h1>
-          <h2>{this.state.timerLabel}</h2>
-          <div id="timerControls" className="flexContainer">
-              <Button variant ="contained" color = "primary" onClick={this.startStop} id="start-stop">Start/Stop</Button>
-              <Button variant = "contained" color = "secondary" onClick={this.resetTimer} id="reset">Reset</Button>
-          </div>
-        </div>
+        <Modal show = {this.state.show} handleClose = {this.goSession} buttonText = "Go!">
+        <form>
+          What is your goal for this session? <input type = "text" name = "goal" value = {this.state.goal} onChange={this.handleChange} onKeyPress={this.onKeyPress}/>
+        </form>
         <div className="flexContainer">
           <div id='timerContainer'  className="flexContainer">
-            <h3 id="session-label" className="timerContainerLabels">Session Time</h3>
+            <h3 id="session-
+            label" className="timerContainerLabels">Session Time</h3>
             <h3 id="session-length"  className="timerContainerLabels">{this.state.sessionTimeEntry}</h3>
             <button onClick={this.subSession} id="session-decrement" className="timerContainerButtons">-</button>
             <button onClick={this.addSession} id="session-increment" className="timerContainerButtons">+</button>
@@ -192,6 +217,18 @@ class Countdown extends Component{
             <audio id="notification" src="https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3" preload="auto"></audio> 
           </div>
         </div>
+        </Modal>
+        </Grid>
+       
+        <div id="mainTimer">
+          <h1>{(this.state.timerLabel==="Break") ?  this.formatMinutes(this.state.breakRemainingSeconds) : this.formatMinutes(this.state.sessionRemainingSeconds)}</h1>
+          <h2>{this.state.timerLabel}</h2>
+          <div id="timerControls" className="flexContainer">
+              <Button variant ="contained" color = "primary" onClick={this.startStop} id="start-stop">Start/Stop</Button>
+              <Button variant = "contained" color = "secondary" onClick={this.resetTimer} id="reset">Reset</Button>
+          </div>
+        </div>
+        
         </Grid>
       </div>
     )
@@ -203,3 +240,6 @@ class Countdown extends Component{
 
 
 export default Countdown;
+
+
+

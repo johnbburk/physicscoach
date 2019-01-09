@@ -7,6 +7,7 @@ import App from "./components/App";
 import { BrowserRouter as Router, Route, Redirect, Link, Switch } from "react-router-dom";
 import { logout } from './helpers/auth'
 import UserTest from "./components/UserTest"
+import Main from "./components/Main"
 
 const keys = require("./config/keys");
 
@@ -76,7 +77,7 @@ class SignInScreen extends React.Component {
 
 }
             </div>
-          )
+          ) 
         }
     return(
       <Router>
@@ -85,11 +86,13 @@ class SignInScreen extends React.Component {
             <li><Link to ="/public">Public Page</Link></li>
             <li><Link to ="/protected">Protected</Link></li>
             <li><Link to ="/user">User</Link></li>
+            <li><Link to ="/newSession">New Session</Link></li>
             
         </ul>
         <Switch>
           <Route  path="/public" component = {Public}/>
-          <PrivateRoute authed={this.state.isSignedIn} path="/protected" component = {App}/>
+          <PrivateRoute authed={this.state.isSignedIn} path="/protected" component = {Main}/>
+          <PrivateRoute authed={this.state.isSignedIn} path="/newSession" component = {App}/>
           <Route  path="/user" component = {UserTest}/>
         </Switch>          
           <button
