@@ -1,6 +1,6 @@
 //todo
 //there is a problem with the handlechange fuction. Should change this to update the state when the enter key is pressed
-
+//need to update the style
 
 import React, { Component } from "react";
 import "./../styles/index.css";
