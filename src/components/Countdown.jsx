@@ -1,6 +1,6 @@
 //todo
-//there is a problem with the handlechange fuction. Should change this to update the state when the enter key is pressed
 //need to update the style
+//need to refactor so that state is in the app. 
 
 import React, { Component } from "react";
 import "./../styles/index.css";
@@ -33,24 +33,20 @@ class Countdown extends Component{
   constructor(props){
     super(props);
     this.state = {
-      sessionTimeEntry: 25, //in min
-      breakTimeEntry: 5, //in min
-      sessionRemainingSeconds: 1500, //in seconds
-      breakRemainingSeconds: 300, //in seconds
+      sessionTimeEntry: 1, //in min
+      sessionRemainingSeconds: 60, //in seconds
       running: false,
       timerLabel: "Session",
       goal: "",
-      show: true
+      show: true,
+      sessionRef: null
     }
   
   this.addSession = this.addSession.bind(this);
   this.subSession = this.subSession.bind(this);
-  this.addBreak = this.addBreak.bind(this);
-  this.subBreak = this.subBreak.bind(this);
   this.startStop = this.startStop.bind(this);
   this.resetTimer = this.resetTimer.bind(this);
   this.formatMinutes = this.formatMinutes.bind(this);
-  this.onKeyPress = this.onKeyPress.bind(this);
   this.handleChange = this.handleChange.bind(this);
   }
 
@@ -74,34 +70,37 @@ class Countdown extends Component{
   }
 
 
-  addBreak() {
-    if (this.state.breakTimeEntry < 60 && this.state.running === false) {
-      this.setState({
-        breakTimeEntry: this.state.breakTimeEntry + 1,
-        breakRemainingSeconds: (this.state.breakTimeEntry + 1) * 60
-      })
-    }
-  }
-
-  subBreak() {
-    if (this.state.breakTimeEntry > 1 && this.state.running === false) {
-      this.setState({
-        breakTimeEntry: this.state.breakTimeEntry - 1,
-        breakRemainingSeconds: (this.state.breakTimeEntry - 1) * 60
-      })
-    }
-  }
-
   startStop() {
     const db = firebase.firestore();
     const status = this.state.running;
     const user = firebase.auth().currentUser
-    const ev = new Date();
-    const sessionRef = db.collection("sessions").add({
-      start_time: ev.toJSON(),
-      user: user.uid,
-      
-    })
+    
+    if(!this.state.sessionRef) //first time starting timer, record new database entry
+    {
+      console.log("writing session to cloudstore")
+      const sessionRef = db.collection("sessions").add({
+        start_time: firebase.database.ServerValue.TIMESTAMP,
+        user: user.uid,
+        goal: this.state.goal,
+        
+      })
+      console.log(firebase.database.ServerValue.TIMESTAMP)
+      this.setState({sessionRef: sessionRef});
+    }
+    else //need log split in firebase
+    {
+      const sessionRef = this.state.sessionRef
+      const action = (this.state.running ? "stop":"start");
+
+      const splitsRef = sessionRef.child("splits");
+      const newSplitRef = splitsRef.push();
+
+      newSplitRef.set({
+        split_time: firebase.database.ServerValue.TIMESTAMP,
+        action: action
+      })
+    }
+
     // const chime1 = new Audio("https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3") // changed to use <audio> to pass FCC tests
     switch (status) {
       case false:
@@ -111,8 +110,13 @@ class Countdown extends Component{
         this.timer = setInterval(() => {
           if (this.state.running) {
 
-            if ( (this.state.sessionRemainingSeconds === 0 && this.state.breakRemainingSeconds === 1) || (this.state.sessionRemainingSeconds === 1 && this.state.breakRemainingSeconds === this.state.breakTimeEntry*60) ) {
+            if  (this.state.sessionRemainingSeconds === 0 ) { //TODO: need to log stop time in session
               // chime1.play(); // changed to use <audio> to pass FCC tests
+              const sessionRef = this.state.sessionRef
+
+              firebase.database().sessionRef.set({
+                stop_time: firebase.database.ServerValue.TIMESTAMP
+              })
               document.getElementById("notification").play();
             }
 
@@ -122,19 +126,9 @@ class Countdown extends Component{
                 sessionRemainingSeconds: this.state.sessionRemainingSeconds - 1,
                 timerLabel: 'Session'
               });
-            } else if (this.state.breakRemainingSeconds > 0 && this.state.timerLabel === "Session") { //wont continue
+            }
+            else {
               this.setState({
-                timerLabel: 'Break'
-              });
-            } else if (this.state.breakRemainingSeconds > 0) {
-              this.setState({
-                breakRemainingSeconds: this.state.breakRemainingSeconds - 1,
-                timerLabel: 'Break'
-              });
-            } else {
-              this.setState({
-                sessionRemainingSeconds: this.state.sessionTimeEntry * 60,
-                breakRemainingSeconds: this.state.breakTimeEntry * 60,
                 timerLabel: 'Session'
               });
             }
@@ -154,9 +148,7 @@ class Countdown extends Component{
   resetTimer() {
     this.setState({
       sessionTimeEntry: 25,
-      breakTimeEntry: 5,
       sessionRemainingSeconds: 1500,
-      breakRemainingSeconds: 300,
       running: false,
       timerLabel: "Session"
     })
@@ -170,13 +162,6 @@ class Countdown extends Component{
     return minutes + ":" + seconds;
   }
 
-  onKeyPress(event){
-    if(event.key == "Enter"){
-    event.preventDefault();
-    this.setState({goal: event.target.goal})
-    console.log("Goal changed!")
-    }
-  }
 
   handleChange(event){
     this.setState({goal: event.target.goal})
@@ -186,9 +171,12 @@ class Countdown extends Component{
      this.setState({ show: false });
      //start timer
      this.startStop();
-     //insert text in html for goal
      //save data to firebase
   };
+
+  onChange = (event) =>{
+    this.setState({goal: event.target.value});
+  }
   
 
   render() {
@@ -197,9 +185,10 @@ class Countdown extends Component{
       <Grid container spacing = {24}>
       <Grid item xs={12}>
         <h1>Pomodoro Clock</h1>
+        <h2>{this.state.goal}</h2>
         <Modal show = {this.state.show} handleClose = {this.goSession} buttonText = "Go!">
         <form>
-          What is your goal for this session? <input type = "text" name = "goal" value = {this.state.goal} onChange={this.handleChange} onKeyPress={this.onKeyPress}/>
+          What is your goal for this session? <input type = "text" name = "goal" onChange={this.onChange}/>
         </form>
         <div className="flexContainer">
           <div id='timerContainer'  className="flexContainer">
@@ -209,20 +198,14 @@ class Countdown extends Component{
             <button onClick={this.subSession} id="session-decrement" className="timerContainerButtons">-</button>
             <button onClick={this.addSession} id="session-increment" className="timerContainerButtons">+</button>
           </div>
-          <div id='timerContainer'  className="flexContainer">
-            <h3 id="break-label"  className="timerContainerLabels">Break Time</h3>
-            <h3 id="break-length"  className="timerContainerLabels">{this.state.breakTimeEntry}</h3>
-            <button onClick={this.subBreak} id="break-decrement" className="timerContainerButtons">-</button>
-            <button onClick={this.addBreak} id="break-increment" className="timerContainerButtons">+</button>
-            <audio id="notification" src="https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3" preload="auto"></audio> 
-          </div>
         </div>
         </Modal>
         </Grid>
        
         <div id="mainTimer">
-          <h1>{(this.state.timerLabel==="Break") ?  this.formatMinutes(this.state.breakRemainingSeconds) : this.formatMinutes(this.state.sessionRemainingSeconds)}</h1>
+          <h1>{this.formatMinutes(this.state.sessionRemainingSeconds)}</h1>
           <h2>{this.state.timerLabel}</h2>
+         
           <div id="timerControls" className="flexContainer">
               <Button variant ="contained" color = "primary" onClick={this.startStop} id="start-stop">Start/Stop</Button>
               <Button variant = "contained" color = "secondary" onClick={this.resetTimer} id="reset">Reset</Button>
@@ -230,6 +213,7 @@ class Countdown extends Component{
         </div>
         
         </Grid>
+        <audio id="notification" src="https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3" preload="auto"></audio> 
       </div>
     )
   }
