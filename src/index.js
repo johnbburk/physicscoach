@@ -16,6 +16,8 @@ const Public = () => <h3>Public</h3>
 const Protected = () =><h3>Protected</h3>
 const UT = () => <div><UserTest /></div>
 
+
+
 class SignInScreen extends React.Component {
   constructor(props){
     super(props);
@@ -25,7 +27,6 @@ class SignInScreen extends React.Component {
     isSignedIn: false, // Local signed-in state.
     loading: true,
     authUser: null
-
   };
   }
   // Configure FirebaseUI.
@@ -41,6 +42,8 @@ class SignInScreen extends React.Component {
       signInSuccessWithAuthResult: () => false
     }
   };
+
+
 
   // Listen to the Firebase Auth state and set the local state.
   componentDidMount() {

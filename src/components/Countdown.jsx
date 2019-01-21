@@ -1,6 +1,9 @@
 //todo
 //need to update the style
 //need to refactor so that state is in the app. 
+//idea: create state for local start, and measure splits off of that, then record them in array on FS
+
+
 
 import React, { Component } from "react";
 import "./../styles/index.css";
@@ -8,26 +11,17 @@ import Button from '@material-ui/core/Button';
 import { withStyles } from '@material-ui/core/styles';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid'; 
-import firebase from "../config/constants.js";
+import firebase, { ref } from "../config/constants.js";
 import moment from "moment";
 import Modal from "./Modal";
 
+const db = firebase.firestore();
+const settings = {/* your settings... */ timestampsInSnapshots: true};
+db.settings(settings);
+const sessionsRef = db.collection("sessions")
+const user = firebase.auth().currentUser;
 
-var database = firebase.database();
 
-
-
-
-const styles = theme => ({
-  root: {
-    flexGrow: 1,
-  },
-  paper: {
-    padding: theme.spacing.unit * 2,
-    textAlign: 'center',
-    color: theme.palette.text.secondary,
-  },
-});
 
 class Countdown extends Component{
   constructor(props){
@@ -38,8 +32,9 @@ class Countdown extends Component{
       running: false,
       timerLabel: "Session",
       goal: "",
-      show: true,
-      sessionRef: null
+      showStart: true,
+      showClose: false,
+      sessionRef: null,
     }
   
   this.addSession = this.addSession.bind(this);
@@ -68,38 +63,45 @@ class Countdown extends Component{
       })
     }
   }
-
+ 
 
   startStop() {
-    const db = firebase.firestore();
     const status = this.state.running;
-    const user = firebase.auth().currentUser
     
     if(!this.state.sessionRef) //first time starting timer, record new database entry
     {
       console.log("writing session to cloudstore")
-      const sessionRef = db.collection("sessions").add({
-        start_time: firebase.database.ServerValue.TIMESTAMP,
+      const user = firebase.auth().currentUser;
+
+  const sessionRef = sessionsRef.add({
+        start_time: firebase.firestore.FieldValue.serverTimestamp(),
         user: user.uid,
         goal: this.state.goal,
-        
-      })
-      console.log(firebase.database.ServerValue.TIMESTAMP)
-      this.setState({sessionRef: sessionRef});
+        splits: [] 
+      }).then( ref =>{
+      console.log("Write successful with ID: ", ref.id);
+      this.setState({sessionRef: ref.id});
+      return ref.id;
+      }
+      );
     }
-    else //need log split in firebase
+
+    //TODO: deal with splits. For now, I'm not recording them in the databse (21/1/19)
+    /* else //need log split in firebase
     {
       const sessionRef = this.state.sessionRef
+      console.log("sessionRef is: ",sessionRef)
       const action = (this.state.running ? "stop":"start");
-
-      const splitsRef = sessionRef.child("splits");
-      const newSplitRef = splitsRef.push();
-
-      newSplitRef.set({
-        split_time: firebase.database.ServerValue.TIMESTAMP,
-        action: action
-      })
-    }
+      const data = {timestamp: firebase.firestore.FieldValue.serverTimestamp(), action: action}
+      console.log ("data is ",data)
+       const splitRef = sessionsRef.doc(sessionRef).update(
+        {"splits" : firebase.firestore.FieldValue.arrayUnion(
+          data)}
+      ).then(ref=>{
+        console.log("Split write successful with ID ", ref.id);
+        return ref.id
+      }) 
+    } */
 
     // const chime1 = new Audio("https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3") // changed to use <audio> to pass FCC tests
     switch (status) {
@@ -110,14 +112,17 @@ class Countdown extends Component{
         this.timer = setInterval(() => {
           if (this.state.running) {
 
-            if  (this.state.sessionRemainingSeconds === 0 ) { //TODO: need to log stop time in session
+            if  (this.state.sessionRemainingSeconds === 0 ) { 
               // chime1.play(); // changed to use <audio> to pass FCC tests
               const sessionRef = this.state.sessionRef
-
-              firebase.database().sessionRef.set({
-                stop_time: firebase.database.ServerValue.TIMESTAMP
+              console.log(sessionRef)
+              sessionsRef.doc(sessionRef).update({
+                stop_time: firebase.firestore.FieldValue.serverTimestamp()
               })
               document.getElementById("notification").play();
+              this.setState({ running: false, showClose: true })
+
+
             }
 
 
@@ -168,10 +173,9 @@ class Countdown extends Component{
     }
 
   goSession = () => {
-     this.setState({ show: false });
+     this.setState({ showStart: false });
      //start timer
      this.startStop();
-     //save data to firebase
   };
 
   onChange = (event) =>{
@@ -186,7 +190,7 @@ class Countdown extends Component{
       <Grid item xs={12}>
         <h1>Pomodoro Clock</h1>
         <h2>{this.state.goal}</h2>
-        <Modal show = {this.state.show} handleClose = {this.goSession} buttonText = "Go!">
+        <Modal show = {this.state.showStart} handleClose = {this.goSession} buttonText = "Go!">
         <form>
           What is your goal for this session? <input type = "text" name = "goal" onChange={this.onChange}/>
         </form>
@@ -211,8 +215,12 @@ class Countdown extends Component{
               <Button variant = "contained" color = "secondary" onClick={this.resetTimer} id="reset">Reset</Button>
           </div>
         </div>
-        
         </Grid>
+
+      <Modal show = {this.state.showClose}>
+      This is the closing screen.
+      </Modal>
+
         <audio id="notification" src="https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3" preload="auto"></audio> 
       </div>
     )
