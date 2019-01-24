@@ -1,4 +1,4 @@
-//todo
+//TODO: style the app with material.ui, also replace add function with doc
 //need to update the style
 //need to refactor so that state is in the app. 
 //idea: create state for local start, and measure splits off of that, then record them in array on FS
@@ -14,6 +14,7 @@ import Grid from '@material-ui/core/Grid';
 import firebase, { ref } from "../config/constants.js";
 import moment from "moment";
 import Modal from "./Modal";
+import StarRatings from 'react-star-ratings'
 
 const db = firebase.firestore();
 const settings = {/* your settings... */ timestampsInSnapshots: true};
@@ -35,6 +36,11 @@ class Countdown extends Component{
       showStart: true,
       showClose: false,
       sessionRef: null,
+      rating: 0,
+      goal_comment: "",
+      question_cmmment: "",
+      learn_comment: ""
+
     }
   
   this.addSession = this.addSession.bind(this);
@@ -43,6 +49,7 @@ class Countdown extends Component{
   this.resetTimer = this.resetTimer.bind(this);
   this.formatMinutes = this.formatMinutes.bind(this);
   this.handleChange = this.handleChange.bind(this);
+  this.changeRating = this.changeRating.bind(this);
   }
 
   addSession() { //adding and subtracting methods need to also chage the session remaining in seconds to mirrow the entry time if ever changed
@@ -179,8 +186,12 @@ class Countdown extends Component{
   };
 
   onChange = (event) =>{
-    this.setState({goal: event.target.value});
-  }
+    this.setState({[event.target.name]: event.target.value});
+  };
+
+  changeRating = (event)=>{
+    this.setState({rating: event.target.value});
+  };
   
 
   render() {
@@ -219,6 +230,15 @@ class Countdown extends Component{
 
       <Modal show = {this.state.showClose}>
       This is the closing screen.
+      <form>
+          Your Goal: {this.state.goal}
+          Comment on your goal: <input type = "text" name = "goal_comment" onChange={this.onChange}/>
+          Qaulity of practice: <StarRatings rating={this.state.rating} starRatedColor = "red" numberOfStars = {5} name = 'rating' changeRating ={this.changeRating}/>
+          What did you learn: <input type = "text" name = "learn_comment" onChange={this.onChange}/>
+          1 Question you still have: <input type = "text" name = "question_cmmment" onChange={this.onChange}/>
+        </form>
+
+
       </Modal>
 
         <audio id="notification" src="https://res.cloudinary.com/dwut3uz4n/video/upload/v1532362194/352659__foolboymedia__alert-chime-1.mp3" preload="auto"></audio> 

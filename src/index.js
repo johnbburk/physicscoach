@@ -1,3 +1,5 @@
+//TODO use this code to adapt login/logout button http://bit.ly/2FVJBcy
+
 // Import FirebaseAuth and firebase.
 import React from 'react';
 import ReactDOM from "react-dom";
@@ -8,6 +10,22 @@ import { BrowserRouter as Router, Route, Redirect, Link, Switch } from "react-ro
 import { logout } from './helpers/auth'
 import UserTest from "./components/UserTest"
 import Main from "./components/Main"
+import AppBar from "./components/layout/AppBar"
+
+
+const styles = {
+  root: {
+    flexGrow: 1,
+  },
+  grow: {
+    flexGrow: 1,
+  },
+  menuButton: {
+    marginLeft: -12,
+    marginRight: 20,
+  },
+};
+
 
 const keys = require("./config/keys");
 
@@ -66,13 +84,21 @@ class SignInScreen extends React.Component {
 
   render() {
     if (this.state.loading){
-      return (<h1>Loading</h1>)
+    
+        return (
+          <React.Fragment>
+          <AppBar status = "Login"/>
+          <h1>Loading</h1>
+          </React.Fragment>
+        )
+     
     }
       if(!this.state.isSignedIn) {
           return (
             <div>
+              <AppBar status = "Login"/>
               <h1>My App</h1>
-              <p>Please sign-in:</p>
+              
               <StyledFirebaseAuth uiConfig={this.uiConfig} firebaseAuth={firebase.auth()}/>
           
               const user = firebase.auth().currentUser;
@@ -83,6 +109,10 @@ class SignInScreen extends React.Component {
           ) 
         }
     return(
+      <React.Fragment>
+      <AppBar status = "Logout" onClick={() => {
+                          logout();
+                        }}/>
       <Router>
         <div>
           <ul>
@@ -109,6 +139,7 @@ class SignInScreen extends React.Component {
         </div>
         
       </Router>
+      </React.Fragment>
     )
     
 }
