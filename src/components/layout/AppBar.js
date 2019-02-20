@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from "react-dom";
 import PropTypes from 'prop-types';
 import { withStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
@@ -7,6 +8,7 @@ import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
+import SimpleDialog from "../LoginModal"
 
 const styles = {
   root: {
@@ -21,8 +23,14 @@ const styles = {
   },
 };
 
+
+
 function ButtonAppBar(props) {
   const { classes } = props;
+
+  function displayLoginModal(){
+    ReactDOM.render(<SimpleDialog classes ={classes} open = {true}/>, document.getElementById("modal"));
+  }
   return (
     <div className={classes.root}>
       <AppBar position="static">
@@ -33,12 +41,14 @@ function ButtonAppBar(props) {
           <Typography variant="h6" color="inherit" className={classes.grow}>
             Physics Coach
           </Typography>
-          <Button color="inherit" onClick = {props.onClick}>{props.status}</Button>
+          <Button color="inherit" onClick = {displayLoginModal}>{props.status}</Button>
         </Toolbar>
       </AppBar>
     </div>
   );
 }
+
+
 
 ButtonAppBar.propTypes = {
   classes: PropTypes.object.isRequired,

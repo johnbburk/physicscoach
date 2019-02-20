@@ -5,22 +5,19 @@
 
 
 
-import React, { Component } from "react";
+import React, { Component, useReducer } from "react";
 import "./../styles/index.css";
 import Button from '@material-ui/core/Button';
-import { withStyles } from '@material-ui/core/styles';
-import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid'; 
-import firebase, { ref } from "../config/constants.js";
-import moment from "moment";
+import firebase from "../config/constants.js";
 import Modal from "./Modal";
 import StarRatings from 'react-star-ratings'
 
 const db = firebase.firestore();
 const settings = {/* your settings... */ timestampsInSnapshots: true};
+const sessionsRef = 
 db.settings(settings);
-const sessionsRef = db.collection("sessions")
-const user = firebase.auth().currentUser;
+//const user = firebase.auth().currentUser;
 
 
 
@@ -33,8 +30,8 @@ class Countdown extends Component{
       running: false,
       timerLabel: "Session",
       goal: "",
-      showStart: true,
-      showClose: false,
+      showStart: false,
+      showClose: true,
       sessionRef: null,
       rating: 0,
       goal_comment: "",
@@ -79,12 +76,15 @@ class Countdown extends Component{
     {
       console.log("writing session to cloudstore")
       const user = firebase.auth().currentUser;
+ 
 
   const sessionRef = sessionsRef.add({
         start_time: firebase.firestore.FieldValue.serverTimestamp(),
         user: user.uid,
+        displayName: user.displayName,
+        email: user.email,
         goal: this.state.goal,
-        splits: [] 
+
       }).then( ref =>{
       console.log("Write successful with ID: ", ref.id);
       this.setState({sessionRef: ref.id});
@@ -197,7 +197,7 @@ class Countdown extends Component{
   render() {
     return (
       <div id="clock" >
-      <Grid container spacing = {24}>
+      <Grid container spacing = {'24'}>
       <Grid item xs={12}>
         <h1>Pomodoro Clock</h1>
         <h2>{this.state.goal}</h2>

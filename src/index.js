@@ -1,5 +1,5 @@
 //TODO use this code to adapt login/logout button http://bit.ly/2FVJBcy
-
+//TODO deal with what happens when you logout in the middle of a session. 
 // Import FirebaseAuth and firebase.
 import React from 'react';
 import ReactDOM from "react-dom";
@@ -11,6 +11,7 @@ import { logout } from './helpers/auth'
 import UserTest from "./components/UserTest"
 import Main from "./components/Main"
 import AppBar from "./components/layout/AppBar"
+import SimpleDialogDemo from "./components/LoginModal"
 
 
 const styles = {
@@ -26,8 +27,6 @@ const styles = {
   },
 };
 
-
-const keys = require("./config/keys");
 
 
 const Public = () => <h3>Public</h3>
@@ -82,6 +81,11 @@ class SignInScreen extends React.Component {
     this.unregisterAuthObserver();
   }
 
+  displayLoginModal(){
+    console.log("display LoginModal")
+    ReactDOM.render( <SimpleDialogDemo />, document.getElementById('modal'));
+  }
+
   render() {
     if (this.state.loading){
     
@@ -110,9 +114,7 @@ class SignInScreen extends React.Component {
         }
     return(
       <React.Fragment>
-      <AppBar status = "Logout" onClick={() => {
-                          logout();
-                        }}/>
+      <AppBar status = "Logout" onClick={logout}/>
       <Router>
         <div>
           <ul>
